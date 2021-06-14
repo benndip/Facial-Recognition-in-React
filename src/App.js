@@ -36,7 +36,7 @@ const App = () => {
       faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections)
       faceapi.draw.drawFaceExpressions(canvasRef.current, resizedDetections)
 
-      console.log(detections)
+      // console.log(detections)
 
       const results = resizedDetections.map(d => {
         return faceMatcher.findBestMatch(d.descriptor)
@@ -48,20 +48,24 @@ const App = () => {
         drawBox.draw(canvasRef.current)
       })
 
-    });
+    },100);
 
   }
 
- 
+
   const loadLabeledModels = () => {
     const labels = ["Benndip", "Queen"]
     return Promise.all(
       labels.map(async (label) => {
         const descriptions = []
         for (let i = 1; i <= 2; i++) {
-          const img = await faceapi.fetchImage(`./labeled_images/${label}/${i}.jpg`)
-          const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
-          descriptions.push(detection.descriptor)
+          try {
+            const img = await faceapi.fetchImage(`./labeled_images/${label}/${i}.jpg`)
+            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
+            descriptions.push(detection.descriptor)
+          } catch (e) {
+            console.log("Error e " + e)
+          }
         }
         setCurrentLabel(label + 'Face detected')
         return new faceapi.LabeledFaceDescriptors(label, descriptions)
