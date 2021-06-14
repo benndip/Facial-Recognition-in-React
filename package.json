@@ -10,6 +10,7 @@
     "@types/offscreencanvas": "^2019.6.2",
     "@types/seedrandom": "^3.0.0",
     "@types/webgl-ext": "^0.0.32",
+    "canvas": "^2.8.0",
     "face-api.js": "^0.22.2",
     "node-fetch": "^2.6.1",
     "react": "^17.0.2",

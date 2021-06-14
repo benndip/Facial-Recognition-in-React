@@ -3,6 +3,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useRef } from 'react';
 import * as faceapi from 'face-api.js'
+import canvas from 'canvas'
 import './App.css';
 
 const App = () => {
@@ -48,7 +49,7 @@ const App = () => {
         drawBox.draw(canvasRef.current)
       })
 
-    },100);
+    }, 100);
 
   }
 
@@ -60,8 +61,11 @@ const App = () => {
         const descriptions = []
         for (let i = 1; i <= 2; i++) {
           try {
-            const img = await faceapi.fetchImage(`./labeled_images/${label}/${i}.jpg`)
-            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
+            // eslint-disable-next-line no-undef
+            faceapi.env.monkeyPatch({ Canvas, Image })
+            const img = await canvas.loadImage(`./labeled_images/${label}/${i}.jpg`);
+            console.log(img)
+            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
             descriptions.push(detection.descriptor)
           } catch (e) {
             console.log("Error e " + e)
