@@ -9,28 +9,64 @@ const App = () => {
   const videoWidth = 720;
   const videoHeight = 560;
   const [initializing, setInitializing] = useState(false)
+  const [currentLabel, setCurrentLabel] = useState('')
   const videoRef = useRef()
   const canvasRef = useRef()
 
-  const handleVideoOnplay = () => {
+  const handleVideoOnplay = async () => {
+    if (initializing) {
+      setInitializing(false)
+    }
+
+    const labeledDescriptors = await loadLabeledModels()
+    const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6)
+
+    canvasRef.current.innerHTML = faceapi.createCanvasFromMedia(videoRef.current)
+    const disPlaySize = {
+      width: videoWidth,
+      height: videoHeight
+    }
+    faceapi.matchDimensions(canvasRef.current, disPlaySize);
     setInterval(async () => {
-      if (initializing) {
-        setInitializing(false)
-      }
-      canvasRef.current.innerHTML = faceapi.createCanvasFromMedia(videoRef.current)
-      const disPlaySize = {
-        width: videoWidth,
-        height: videoHeight
-      }
-      faceapi.matchDimensions(canvasRef.current, disPlaySize);
+
       const detections = await faceapi.detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions();
       const resizedDetections = faceapi.resizeResults(detections, disPlaySize);
-      canvasRef.current.getContext("2d").fillRect(0, 0, videoWidth, videoHeight)
+      canvasRef.current.getContext("2d").clearRect(0, 0, videoWidth, videoHeight)
       faceapi.draw.drawDetections(canvasRef.current, resizedDetections)
       faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections)
       faceapi.draw.drawFaceExpressions(canvasRef.current, resizedDetections)
+
       console.log(detections)
-    }, 100);
+
+      const results = resizedDetections.map(d => {
+        return faceMatcher.findBestMatch(d.descriptor)
+      })
+
+      results.forEach((result, i) => {
+        const box = resizedDetections[i].detection.box
+        const drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() })
+        drawBox.draw(canvasRef.current)
+      })
+
+    });
+
+  }
+
+ 
+  const loadLabeledModels = () => {
+    const labels = ["Benndip", "Queen"]
+    return Promise.all(
+      labels.map(async (label) => {
+        const descriptions = []
+        for (let i = 1; i <= 2; i++) {
+          const img = await faceapi.fetchImage(`./labeled_images/${label}/${i}.jpg`)
+          const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
+          descriptions.push(detection.descriptor)
+        }
+        setCurrentLabel(label + 'Face detected')
+        return new faceapi.LabeledFaceDescriptors(label, descriptions)
+      })
+    )
   }
 
   useEffect(() => {
@@ -65,6 +101,7 @@ const App = () => {
         />
         <canvas ref={canvasRef} className="canva" />
       </div>
+      <p>{currentLabel}</p>
     </div>
   );
 }
