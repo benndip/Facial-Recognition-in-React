@@ -6,25 +6,31 @@ import * as faceapi from 'face-api.js'
 import canvas from 'canvas'
 import './App.css';
 
+import Login from "./Pages/Login"
+import SignIn from "./Pages/SignIn"
+
 const App = () => {
+
   const videoWidth = 720;
   const videoHeight = 560;
-  const [initializing, setInitializing] = useState(false)
-  const [currentLabel, setCurrentLabel] = useState('')
+
+  const [initializing, setInitializing] = useState(true)
+  const [currentLabel, setCurrentLabel] = useState([])
+
   const videoRef = useRef()
   const canvasRef = useRef()
 
   function loadLabeledImages() {
-    const labels = ['Queen', 'Benndip', 'Serge', 'Peter']
+    const labels = ['Queen', 'Benndip', 'Peter']
     return Promise.all(
       labels.map(async (label) => {
         const descriptions = []
-        for (let i = 1; i <= 2; i++) {
+        for (let i = 1; i <= 6; i++) {
           const img = await faceapi.fetchImage(`./labeled_images/${label}/${i}.jpg`)
           const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
           descriptions.push(detections.descriptor)
         }
-        document.body.append(label + ' Faces Loaded | ')
+        // document.body.append(label + ' Faces Loaded | ')
         return new faceapi.LabeledFaceDescriptors(label, descriptions)
       })
     )
@@ -47,37 +53,45 @@ const App = () => {
       }
       faceapi.matchDimensions(canvasRef.current, disPlaySize);
 
-      setInterval(async () => {
+     // setInterval(async () => {
 
-        const detections = await faceapi.detectAllFaces(videoRef.current).withFaceLandmarks().withFaceDescriptors().withFaceExpressions()
-        const resizedDetections = faceapi.resizeResults(detections, disPlaySize);
-        canvasRef.current.getContext("2d").clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+        try {
+          
+          const detections = await faceapi.detectAllFaces(videoRef.current).withFaceLandmarks().withFaceDescriptors().withFaceExpressions()
+          const resizedDetections = faceapi.resizeResults(detections, disPlaySize);
+          canvasRef.current.getContext("2d").clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+  
+          faceapi.draw.drawDetections(canvasRef.current, resizedDetections)
+          faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections)
+          faceapi.draw.drawFaceExpressions(canvasRef.current, resizedDetections)
+  
+          // console.log(detections)
+  
+          const results = resizedDetections.map(d => {
+            return faceMatcher.findBestMatch(d.descriptor)
+          })
+  
+          results.forEach((result, i) => {
+            const box = resizedDetections[i].detection.box
+            const drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() })
+            drawBox.draw(canvasRef.current)
+            console.log(result.toString())
+            let newResult = [...currentLabel, result.toString()]
+            setCurrentLabel(newResult)
+            console.log('This is currentLabel ' + currentLabel.length)
+            reset()
+          })
+        } catch (error) {
+          console.log('Reset to continue')
+          //reset()
+        }
 
-        faceapi.draw.drawDetections(canvasRef.current, resizedDetections)
-        faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections)
-        faceapi.draw.drawFaceExpressions(canvasRef.current, resizedDetections)
-
-        // console.log(detections)
-
-        const results = resizedDetections.map(d => {
-          return faceMatcher.findBestMatch(d.descriptor)
-        })
-
-        results.forEach((result, i) => {
-          const box = resizedDetections[i].detection.box
-          const drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() })
-          drawBox.draw(canvasRef.current)
-        })
-
-      }, 100);
+     // });
     }
-
-
   }
 
-
-
   useEffect(() => {
+    console.log('running again')
     const loadModels = async () => {
       const MODEL_URL = process.env.PUBLIC_URL + '/models'
       setInitializing(true);
@@ -95,27 +109,38 @@ const App = () => {
       ]).then(startVideo)
     }
     loadModels();
-  }, [])
+  }, [currentLabel])
 
   const startVideo = () => {
-    navigator.mediaDevices.getUserMedia({ video: {} }).then((stream) => { videoRef.current.srcObject = stream; }, (err) => console.error(err));
+    !currentLabel.length > 0 && navigator.mediaDevices.getUserMedia({ video: {} }).then((stream) => { videoRef.current.srcObject = stream; }, (err) => console.error(err));
+  }
+
+  const reset = () => {
+    setCurrentLabel([])
   }
 
   return (
     <div className="App">
-      <span>{initializing ? 'Initializing' : 'Ready'}</span>
-      <div className="video-and-canva">
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          height={videoHeight}
-          width={videoWidth}
-          onPlay={handleVideoOnplay}
-        />
-        <canvas ref={canvasRef} className="canva" />
-      </div>
-      <p>{currentLabel}</p>
+      {/* <span>{initializing ? 'Initializing' : 'Ready'}</span> */}
+      {
+        !currentLabel.length > 0
+        &&
+        <div className="video-and-canva">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            height={videoHeight}
+            width={videoWidth}
+            onPlay={handleVideoOnplay}
+          />
+          <canvas ref={canvasRef} className="canva" />
+        </div>
+      }
+      {/* <p>{currentLabel}</p> */}
+      {/* <button onClick={reset}>Reset</button> */}
+      <Login />
+      <SignIn />
     </div>
   );
 }
