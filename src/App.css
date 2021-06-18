@@ -6,13 +6,18 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  background: linear-gradient(to top, #f32b60,#ff8f1f);
 }
 
 .video-and-canva{
   display: flex;
   justify-content: center;
+
 }
 
 .canva{
   position: absolute
+}
+.span{
+  margin-bottom: 45%;
 }

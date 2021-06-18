@@ -16,6 +16,7 @@ const App = () => {
 
   const [initializing, setInitializing] = useState(true)
   const [currentLabel, setCurrentLabel] = useState([])
+  const [attendants, setAttendants] = useState([])
 
   const videoRef = useRef()
   const canvasRef = useRef()
@@ -53,7 +54,7 @@ const App = () => {
       }
       faceapi.matchDimensions(canvasRef.current, disPlaySize);
 
-     // setInterval(async () => {
+     setInterval(async () => {
 
         try {
           
@@ -79,14 +80,14 @@ const App = () => {
             let newResult = [...currentLabel, result.toString()]
             setCurrentLabel(newResult)
             console.log('This is currentLabel ' + currentLabel.length)
-            reset()
+            // reset()
           })
         } catch (error) {
           console.log('Reset to continue')
           //reset()
         }
 
-     // });
+     },1000);
     }
   }
 
@@ -109,7 +110,7 @@ const App = () => {
       ]).then(startVideo)
     }
     loadModels();
-  }, [currentLabel])
+  }, [])
 
   const startVideo = () => {
     !currentLabel.length > 0 && navigator.mediaDevices.getUserMedia({ video: {} }).then((stream) => { videoRef.current.srcObject = stream; }, (err) => console.error(err));
@@ -121,10 +122,12 @@ const App = () => {
 
   return (
     <div className="App">
-      {/* <span>{initializing ? 'Initializing' : 'Ready'}</span> */}
+    
+      <span className = "span">{initializing ? 'Initializing' : 'SMILE!'}</span>
+    
       {
-        !currentLabel.length > 0
-        &&
+        //!currentLabel.length > 0
+       // &&
         <div className="video-and-canva">
           <video
             ref={videoRef}
@@ -137,10 +140,9 @@ const App = () => {
           <canvas ref={canvasRef} className="canva" />
         </div>
       }
-      {/* <p>{currentLabel}</p> */}
-      {/* <button onClick={reset}>Reset</button> */}
-      <Login />
-      <SignIn />
+      {/* <span>{currentLabel}</span> */}
+      <button onClick={reset}>{currentLabel}</button>
+      {/* <Login /> */}
     </div>
   );
 }
