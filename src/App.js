@@ -6,12 +6,9 @@ import * as faceapi from 'face-api.js'
 import canvas from 'canvas'
 import './App.css';
 
-import Login from "./Pages/Login"
-import SignIn from "./Pages/SignIn"
-
 const App = () => {
 
-  const videoWidth = 720;
+  const videoWidth = 370;
   const videoHeight = 560;
 
   const [initializing, setInitializing] = useState(true)
@@ -20,6 +17,7 @@ const App = () => {
 
   const videoRef = useRef()
   const canvasRef = useRef()
+  const watcherRef = useRef()
 
   function loadLabeledImages() {
     const labels = ['Queen', 'Benndip', 'Peter']
@@ -54,24 +52,24 @@ const App = () => {
       }
       faceapi.matchDimensions(canvasRef.current, disPlaySize);
 
-     setInterval(async () => {
+      setInterval(async () => {
 
         try {
-          
+
           const detections = await faceapi.detectAllFaces(videoRef.current).withFaceLandmarks().withFaceDescriptors().withFaceExpressions()
           const resizedDetections = faceapi.resizeResults(detections, disPlaySize);
           canvasRef.current.getContext("2d").clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
-  
+
           faceapi.draw.drawDetections(canvasRef.current, resizedDetections)
           faceapi.draw.drawFaceLandmarks(canvasRef.current, resizedDetections)
           faceapi.draw.drawFaceExpressions(canvasRef.current, resizedDetections)
-  
+
           // console.log(detections)
-  
+
           const results = resizedDetections.map(d => {
             return faceMatcher.findBestMatch(d.descriptor)
           })
-  
+
           results.forEach((result, i) => {
             const box = resizedDetections[i].detection.box
             const drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() })
@@ -87,47 +85,86 @@ const App = () => {
           //reset()
         }
 
-     },1000);
+      }, 1000);
     }
   }
 
-  useEffect(() => {
-    console.log('running again')
-    const loadModels = async () => {
-      const MODEL_URL = process.env.PUBLIC_URL + '/models'
-      setInitializing(true);
-      Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-        faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-        faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-
-        faceapi.loadFaceDetectionModel(MODEL_URL),
-        faceapi.loadSsdMobilenetv1Model(MODEL_URL),
-        faceapi.loadFaceLandmarkModel(MODEL_URL),
-        faceapi.loadFaceRecognitionModel(MODEL_URL)
-      ]).then(startVideo)
-    }
-    loadModels();
-  }, [])
 
   const startVideo = () => {
-    !currentLabel.length > 0 && navigator.mediaDevices.getUserMedia({ video: {} }).then((stream) => { videoRef.current.srcObject = stream; }, (err) => console.error(err));
+    !currentLabel.length > 0
+      &&
+      new Promise((res, rej) => {
+        navigator.mediaDevices.getUserMedia({ video: {} })
+          .then((stream) => {
+            try {
+              videoRef.current.srcObject = stream
+            } catch (error) {
+              videoRef.current.src = URL.createObjectURL(stream)
+            }
+            videoRef.current.play()
+          })
+          .catch(err => {
+            throw new Error("Unable to Fetch Stream " + err)
+          })
+      })
+  }
+
+  const startWatcherVideo = () => {
+    !currentLabel.length > 0
+      &&
+      new Promise((res, rej) => {
+        navigator.mediaDevices.getUserMedia({ video: {} })
+          .then((stream) => {
+            try {
+              watcherRef.current.srcObject = stream
+            } catch (error) {
+              watcherRef.current.src = URL.createObjectURL(stream)
+            }
+            // watcherRef.current.play()
+          })
+          .catch(err => {
+            throw new Error("Unable to Fetch Stream " + err)
+          })
+      })
+  }
+
+  const loadModels = async () => {
+    const MODEL_URL = process.env.PUBLIC_URL + '/models'
+    setInitializing(true);
+    Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+
+      faceapi.loadFaceDetectionModel(MODEL_URL),
+      faceapi.loadSsdMobilenetv1Model(MODEL_URL),
+      faceapi.loadFaceLandmarkModel(MODEL_URL),
+      faceapi.loadFaceRecognitionModel(MODEL_URL)
+    ]).then(startVideo)
   }
 
   const reset = () => {
     setCurrentLabel([])
   }
 
+
+  useEffect(() => {
+    console.log('running again')
+    loadModels();
+    startWatcherVideo()
+  }, [])
+
+
   return (
     <div className="App">
-    
-      <span className = "span">{initializing ? 'Initializing' : 'SMILE!'}</span>
-    
+
+      <span className="span">{initializing ? 'Initializing' : 'SMILE!'}</span>
+
       {
         //!currentLabel.length > 0
-       // &&
+        // &&
         <div className="video-and-canva">
           <video
             ref={videoRef}
@@ -140,6 +177,13 @@ const App = () => {
           <canvas ref={canvasRef} className="canva" />
         </div>
       }
+      <video
+        ref={initializing ? watcherRef : videoRef }
+        autoPlay
+        muted
+        height={videoHeight}
+        width={videoWidth}
+      />
       {/* <span>{currentLabel}</span> */}
       <button onClick={reset}>{currentLabel}</button>
       {/* <Login /> */}
