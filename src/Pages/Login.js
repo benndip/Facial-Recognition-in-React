@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 const Login = () => {
 
     return (
-        <div></div>
+        <div>
+            <p>I just logged In. Yay</p>
+        </div>
     );
 
 }
