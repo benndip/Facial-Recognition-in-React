@@ -5,6 +5,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as faceapi from 'face-api.js'
 import canvas from 'canvas'
 import './App.css';
+import { BrowserRouter, Route, Switch, Router, Link } from 'react-router-dom';
+
+
+import Login from "./Pages/Login"
+import SignIn from './Pages/SignIn';
+
 
 const App = () => {
 
@@ -159,34 +165,44 @@ const App = () => {
 
   return (
     <div className="App">
+      <div className="link" >
+        <Link className="links" to="/">SignIn </Link>
+        <Link className="links" to="/login">Login</Link>
+        <Link className="links" to="/scan">ScanFace</Link>
+      </div>
 
-      <span className="span">{initializing ? 'Initializing' : 'SMILE!'}</span>
-
-      {
-        //!currentLabel.length > 0
-        // &&
-        <div className="video-and-canva">
+      <Switch>
+        <Route path="/" component={SignIn} exact />
+        <Route path="/login" component={Login} />
+        <Route path="/scan" component={App}>
+          <span className="span">{initializing ? 'Initializing' : 'SMILE!'}</span>
+          {
+            //!currentLabel.length > 0
+            // &&
+            <div className="video-and-canva">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                height={videoHeight}
+                width={videoWidth}
+                onPlay={handleVideoOnplay}
+              />
+              <canvas ref={canvasRef} className="canva" />
+            </div>
+          }
           <video
-            ref={videoRef}
+            ref={initializing ? watcherRef : videoRef}
             autoPlay
             muted
             height={videoHeight}
             width={videoWidth}
-            onPlay={handleVideoOnplay}
           />
-          <canvas ref={canvasRef} className="canva" />
-        </div>
-      }
-      <video
-        ref={initializing ? watcherRef : videoRef }
-        autoPlay
-        muted
-        height={videoHeight}
-        width={videoWidth}
-      />
-      {/* <span>{currentLabel}</span> */}
-      <button onClick={reset}>{currentLabel}</button>
-      {/* <Login /> */}
+          {/* <span>{currentLabel}</span> */}
+          <button onClick={reset}>{currentLabel}</button>
+        </Route>
+      </Switch>
+
     </div>
   );
 }
